@@ -16,3 +16,9 @@ use Illuminate\Http\Request;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+
+Route::group(['prefix' => '1.0'], function () {
+    Route::get('all', "SqmsExamVersionController@index");
+});
+
