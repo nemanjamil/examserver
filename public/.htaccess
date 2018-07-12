@@ -21,12 +21,5 @@
 </IfModule>
 
 
-# ----------------------------------------------------------------------
-# Allow loading of external fonts
-# ----------------------------------------------------------------------
-<FilesMatch "\.(ttf|otf|eot|woff)$">
-    <IfModule mod_headers.c>
-        SetEnvIf Origin "http://googlecloud" AccessControlAllowOrigin=$0
-        Header add Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
-    </IfModule>
-</FilesMatch>
+SetEnvIf Origin "^http(s)?://(.+\.)?(googlecloud|domain2\.com)$" origin_is=$0
+Header always set Access-Control-Allow-Origin %{origin_is}e env=origin_is
