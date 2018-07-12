@@ -26,7 +26,7 @@
 # ----------------------------------------------------------------------
 <FilesMatch "\.(ttf|otf|eot|woff)$">
     <IfModule mod_headers.c>
-        SetEnvIf Origin "http(s)?://?(googlecloud)$" AccessControlAllowOrigin=$0
+        SetEnvIf Origin "http(s)?://(googlecloud)$" AccessControlAllowOrigin=$0
         Header add Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
     </IfModule>
 </FilesMatch>
