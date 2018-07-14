@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Sqms_exam_version;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Storage;
 
 class SqmsExamVersionController extends Controller
 {
@@ -121,12 +121,12 @@ class SqmsExamVersionController extends Controller
         $xmlRoot->appendChild($domtree->createElement('questionTotal', $numberOfQuestionTotal[0]->questionTotal));
 
         // ADD COMMENT IN QUIZ
-        $commentlink = "\n \"examName \" : "."\"".$v->sqms_exam_version_name."\" \n";
-        $commentlink .= "\"set \" : ".$v->sqms_exam_set. " \n";
-        $commentlink .= "\"version \" : ".$v->sqms_exam_version." \n";
-        $commentlink .= "\"SampleSet \" : ".$v->sqms_exam_version_sample_set." \n";
-        $commentlink .= "\"id \" : "."\"".rtrim($idset, "-")."\" \n";
-        $commentlink .= "\"questionTotal \" : ".$numberOfQuestionTotal[0]->questionTotal." \n";
+        $commentlink = "\n \"examName \" : " . "\"" . $v->sqms_exam_version_name . "\" \n";
+        $commentlink .= "\"set \" : " . $v->sqms_exam_set . " \n";
+        $commentlink .= "\"version \" : " . $v->sqms_exam_version . " \n";
+        $commentlink .= "\"SampleSet \" : " . $v->sqms_exam_version_sample_set . " \n";
+        $commentlink .= "\"id \" : " . "\"" . rtrim($idset, "-") . "\" \n";
+        $commentlink .= "\"questionTotal \" : " . $numberOfQuestionTotal[0]->questionTotal . " \n";
 
         $comment = $domtree->createComment($commentlink);
         $xmlRoot->appendChild($comment);
@@ -167,10 +167,10 @@ class SqmsExamVersionController extends Controller
 
             // QUESTIONTEXT
             $questiontext = $currentTrack->appendChild($domtree->createElement('questiontext'));
-                $format = $domtree->createAttribute("format");
-                $questiontext->appendChild($format);
-                $html = $domtree->createTextNode("html");
-                $format->appendChild($html);
+            $format = $domtree->createAttribute("format");
+            $questiontext->appendChild($format);
+            $html = $domtree->createTextNode("html");
+            $format->appendChild($html);
 
             $text = $questiontext->appendChild($domtree->createElement("text"));
             $text->appendChild($domtree->createCDATASection(""));
@@ -180,10 +180,10 @@ class SqmsExamVersionController extends Controller
                 foreach ($listanswers as $k => $v) {
 
                     $answer = $currentTrack->appendChild($domtree->createElement('answer'));
-                        $fraction = $domtree->createAttribute("fraction");
-                        $answer->appendChild($fraction);
-                        $numberfraction = $domtree->createTextNode("100.00000");
-                        $fraction->appendChild($numberfraction);
+                    $fraction = $domtree->createAttribute("fraction");
+                    $answer->appendChild($fraction);
+                    $numberfraction = $domtree->createTextNode("100.00000");
+                    $fraction->appendChild($numberfraction);
 
                     $text = $answer->appendChild($domtree->createElement("text"));
                     $text->appendChild($domtree->createCDATASection($v->answer));
@@ -210,6 +210,7 @@ class SqmsExamVersionController extends Controller
         $datafull = $request->all();
         $data = $datafull["data"];
         $hash_salt = $datafull["hash_salt"];
+        $savedata = $datafull["savedata"];
 
         if (!$hash_salt) {
             return response()->json([
@@ -226,22 +227,41 @@ class SqmsExamVersionController extends Controller
                 'json' => $json,
                 'xml' => $xml,
                 'message' => 'Ok',
-                'status' => true
+                'status' => true,
+                'savedata' => $savedata
             ]);
 
 
         } else {
             $json = $this->showOne($data, $hash_salt);
             $xml = $this->generateXML($data, $hash_salt);
+            $linkdofile = $this->saveToStorage($savedata, $json, $xml, $hash_salt);
 
             return response()->json([
                 'json' => $json,
                 'xml' => $xml,
                 'message' => 'Ok',
-                'status' => true
+                'status' => true,
+                'savedata' => $linkdofile
             ]);
 
         }
+    }
+
+    protected function saveToStorage($savedata, $json, $xml, $hash_salt)
+    {
+        if ($savedata == 'download') {
+            $namefile = str_replace("-", "", $json["id"]);
+            $publiclink = 'public/' . $namefile;
+            Storage::makeDirectory($publiclink);
+            Storage::put($publiclink . '/' . $namefile . '.json', json_encode($json));
+            Storage::put($publiclink . '/' . $namefile . '.xml', $xml);
+            Storage::put($publiclink . '/' . $namefile . '.SALT', $hash_salt);
+        }  else {
+            $namefile = false;
+        }
+
+        return $namefile;
     }
 
     /**
@@ -352,7 +372,7 @@ class SqmsExamVersionController extends Controller
             }
             $qarr['answersHashORG'] = "hash('sha512', $answerHash)"; // https://www.tools4noobs.com/online_php_functions/sha512/
             $qarr['answersHash'] = hash('sha512', $answerHash);
-            $qarr['answersHashBase64encode'] = base64_encode(hash('sha512', $answerHash));
+            //$qarr['answersHashBase64encode'] = base64_encode(hash('sha512', $answerHash));
             array_push($tren, $qarr);
         }
 
@@ -428,12 +448,12 @@ class SqmsExamVersionController extends Controller
         }
 
         // ADD COMMENT IN QUIZ
-        $commentlink = "\n \"examName \" : "."\"".$v->sqms_exam_version_name."\" \n";
-        $commentlink .= "\"set \" : ".$v->sqms_exam_set. " \n";
-        $commentlink .= "\"version \" : ".$v->sqms_exam_version." \n";
-        $commentlink .= "\"SampleSet \" : ".$v->sqms_exam_version_sample_set." \n";
-        $commentlink .= "\"id \" : "."\"".rtrim($idset, "-")."\" \n";
-        $commentlink .= "\"questionTotal \" : ".$numberOfQuestionTotal[0]->questionTotal." \n";
+        $commentlink = "\n \"examName \" : " . "\"" . $v->sqms_exam_version_name . "\" \n";
+        $commentlink .= "\"set \" : " . $v->sqms_exam_set . " \n";
+        $commentlink .= "\"version \" : " . $v->sqms_exam_version . " \n";
+        $commentlink .= "\"SampleSet \" : " . $v->sqms_exam_version_sample_set . " \n";
+        $commentlink .= "\"id \" : " . "\"" . rtrim($idset, "-") . "\" \n";
+        $commentlink .= "\"questionTotal \" : " . $numberOfQuestionTotal[0]->questionTotal . " \n";
 
         $comment = $domtree->createComment($commentlink);
         $xmlRoot->appendChild($comment);
