@@ -222,13 +222,14 @@ class SqmsExamVersionController extends Controller
         if (count($data) > 1) {
             $json = $this->showMore($data, $hash_salt);
             $xml = $this->generateXMLMore($data, $hash_salt);
+            $linkdofile = $this->saveToStorage($savedata, $json, $xml, $hash_salt);
 
             return response()->json([
                 'json' => $json,
                 'xml' => $xml,
                 'message' => 'Ok',
                 'status' => true,
-                'savedata' => $savedata
+                'savedata' => $linkdofile
             ]);
 
 
