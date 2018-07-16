@@ -64,7 +64,7 @@ class SqmsExamVersionController extends Controller
 
         foreach ($queryExams as $k => $v) {
             $v->sqms_exam_version_id;
-            $examNamefull .= $v->sqms_exam_version_name . "($i), ";
+            $examNamefull .= $this->striphtml($v->sqms_exam_version_name) . "($i), ";
 
             $sqms_exam_version_id = sprintf("%010d", $v->sqms_exam_version_id);
             $sqms_exam_set = sprintf("%05d", $v->sqms_exam_set);
@@ -78,6 +78,15 @@ class SqmsExamVersionController extends Controller
 
     }
 
+    protected function striphtml($value){
+
+        $allowed = "<div><span><pre><p><br><hr><hgroup><h1><h2><h3><h4><h5><h6>";
+        $allowed .= "<ul><ol><li><dl><dt><dd><strong><em><b><i>";
+        $allowed .= "<img><a><abbr><address><blockquote><area><audio><video>";
+        $allowed .= "<caption><table><tbody><td><tfoot><th><thead><tr><sup><sub>";
+
+        return  htmlspecialchars(strip_tags($value,$allowed));
+    }
 
     protected function generateXMLMore($data, $hash_salt)
     {
@@ -99,7 +108,7 @@ class SqmsExamVersionController extends Controller
         $idset = '';
         $i = 0;
         foreach ($queryExams as $k => $v) {
-            $examNamefull .= $v->sqms_exam_version_name . "($i), ";
+            $examNamefull .= $this->striphtml($v->sqms_exam_version_name) . "($i), ";
 
             $sqms_exam_version_id = sprintf("%010d", $v->sqms_exam_version_id);
             $sqms_exam_set = sprintf("%05d", $v->sqms_exam_set);
