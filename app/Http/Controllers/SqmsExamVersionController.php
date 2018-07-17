@@ -52,9 +52,10 @@ class SqmsExamVersionController extends Controller
         $idvcsv = '';
         foreach ($data as $k => $v) {
             $onev = explode("|", $v);
-            $idv[] = $onev[0];
+            $idv[] = (int) $onev[0];
             $idvcsv .= $onev[0] . ',';
         }
+        asort($idv); // just in case
 
         $queryExams = DB::table('sqms_exam_version')->whereIn('sqms_exam_version_id', $idv)->get();
 
@@ -351,33 +352,36 @@ class SqmsExamVersionController extends Controller
             $ls = [];
             $listanswers = DB::select("CALL listanswers($v->sqms_exam_version_id,$v->sqms_question_id)");
             if (count($listanswers) > 0) {
-                $varHashFirstNumber = true;
+                $varHashFirstNumber = true;  // remove line in prod
+                $firstNumberforHash = '';
                 foreach ($listanswers as $k => $v) {
 
 
+                    $answer_is_sprint_int = (int) $v->sqms_answer_id;
+                    $correct_answ = $v->correct;
                     $answer_is_sprint = sprintf("%010d", $v->sqms_answer_id);
                     $forls['answer_id'] = $answer_is_sprint;
                     $forls['answer_text'] = $v->answer;
-                    $forls['correct'] = $v->correct;
-                    if ($v->correct == 1) {
-                        if ($varHashFirstNumber) {
-                            $firstNumberforHash = $answer_is_sprint;
-                            $varHashFirstNumber = false;
-                        }
+                    $forls['correct'] = $correct_answ;
+
+                    if ($correct_answ == 1) {
+                            $firstNumberforHash .= $answer_is_sprint;
                     }
 
-                    if (!$firstNumberforHash) {
-                        return response()->json([
-                            'message' => 'No firstNumberforHash',
-                            'status' => false
-                        ]);
-                        die;
-                    }
-                    $answerHash = $firstNumberforHash . $answer_is_sprint . $hash_salt; //config('constants.hash_salt');
+                    $answerHash = $firstNumberforHash . $hash_salt; //config('constants.hash_salt');
 
 
                     array_push($ls, $forls);
                 }
+
+                if (!$firstNumberforHash) {
+                    return response()->json([
+                        'message' => 'No firstNumberforHash fix the dataBase -> must have one ore more correct answer : '.$answer_is_sprint_int,
+                        'status' => false
+                    ]);
+                    die;
+                }
+
                 $qarr['answers'] = $ls;
             }
             $qarr['answersHashORG'] = "hash('sha512', $answerHash)"; // https://www.tools4noobs.com/online_php_functions/sha512/
@@ -398,6 +402,8 @@ class SqmsExamVersionController extends Controller
         $onev = explode("|", $data[0]);
         $idv = $onev[0];
         $idvcsv = $onev[0];
+
+
 
         $queryExams = DB::table('sqms_exam_version')->where('sqms_exam_version_id', $idv)->get();
 
