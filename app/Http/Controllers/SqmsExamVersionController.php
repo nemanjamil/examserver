@@ -145,13 +145,13 @@ class SqmsExamVersionController extends Controller
         $numberOfQuestionTotalExam = DB::select("CALL examquestions('" . rtrim($idvcsv, ", ") . "')");
         foreach ($numberOfQuestionTotalExam as $k => $v) {
 
-
             $sprint_sqms_question_id = sprintf("%010d", $v->sqms_question_id);
             $qarr['question_id'] = $sprint_sqms_question_id;
             $qarr['question_text'] = $v->question;
             $qarr['answers'] = [];
             $qarr['answersSelected'] = [];
 
+            $question_question = $v->question;
 
             $answer_is_sprint = '';
             $listanswers = DB::select("CALL listanswers($v->sqms_exam_version_id,$v->sqms_question_id)");
@@ -183,7 +183,7 @@ class SqmsExamVersionController extends Controller
             $format->appendChild($html);
 
             $text = $questiontext->appendChild($domtree->createElement("text"));
-            $text->appendChild($domtree->createCDATASection($v->question));
+            $text->appendChild($domtree->createCDATASection($question_question));
 
             // ANSWER
             if (count($listanswers) > 0) {
@@ -485,6 +485,7 @@ class SqmsExamVersionController extends Controller
             $qarr['answers'] = [];
             $qarr['answersSelected'] = [];
 
+            $question_question = $v->question;
 
             $answer_is_sprint = '';
             $listanswers = DB::select("CALL listanswers($v->sqms_exam_version_id,$v->sqms_question_id)");
@@ -516,7 +517,7 @@ class SqmsExamVersionController extends Controller
             $format->appendChild($html);
 
             $text = $questiontext->appendChild($domtree->createElement("text"));
-            $text->appendChild($domtree->createCDATASection(""));
+            $text->appendChild($domtree->createCDATASection($question_question));
 
             // ANSWER
             if (count($listanswers) > 0) {
