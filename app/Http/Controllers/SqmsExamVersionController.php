@@ -183,7 +183,7 @@ class SqmsExamVersionController extends Controller
             $format->appendChild($html);
 
             $text = $questiontext->appendChild($domtree->createElement("text"));
-            $text->appendChild($domtree->createCDATASection(""));
+            $text->appendChild($domtree->createCDATASection($v->question));
 
             // ANSWER
             if (count($listanswers) > 0) {
