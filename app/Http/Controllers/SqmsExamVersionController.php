@@ -384,7 +384,7 @@ class SqmsExamVersionController extends Controller
 
                 $qarr['answers'] = $ls;
             }
-            $qarr['answersHashORG'] = "hash('sha512', $answerHash)"; // https://www.tools4noobs.com/online_php_functions/sha512/
+            //$qarr['answersHashORG'] = "hash('sha512', $answerHash)"; // https://www.tools4noobs.com/online_php_functions/sha512/
             $qarr['answersHash'] = hash('sha512', $answerHash);
             //$qarr['answersHashBase64encode'] = base64_encode(hash('sha512', $answerHash));
             array_push($tren, $qarr);
