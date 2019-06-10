@@ -18,6 +18,10 @@ class SqmsExamVersionController extends Controller
     public function index()
     {
         return Sqms_exam_version::all();
+        // new queru //v_sqms_exam_version_sample_set
+        //return DB::table('v_sqms_exam_version_sample_set')->get();
+        //dd($queryExams);
+
     }
 
     public function hashsalt()
@@ -57,7 +61,8 @@ class SqmsExamVersionController extends Controller
         }
         asort($idv); // just in case
 
-        $queryExams = DB::table('sqms_exam_version')->whereIn('sqms_exam_version_id', $idv)->get();
+        $queryExams = DB::table('v_sqms_exam_version_sample_set')->whereIn('sqms_exam_version_id', $idv)->get();
+        //$queryExams = DB::table('sqms_exam_version')->whereIn('sqms_exam_version_id', $idv)->get();
 
         $examNamefull = "COMBI ";
         $idset = '';
@@ -98,7 +103,8 @@ class SqmsExamVersionController extends Controller
             $idvcsv .= $onev[0] . ',';
         }
 
-        $queryExams = DB::table('sqms_exam_version')->whereIn('sqms_exam_version_id', $idv)->get();
+        $queryExams = DB::table('v_sqms_exam_version_sample_set')->whereIn('sqms_exam_version_id', $idv)->get();
+        //$queryExams = DB::table('sqms_exam_version')->whereIn('sqms_exam_version_id', $idv)->get();
 
         $domtree = new \DOMDocument('1.0', 'UTF-8');
         $xmlRoot = $domtree->createElement("quiz");
@@ -434,7 +440,8 @@ class SqmsExamVersionController extends Controller
             $idvcsv .= $onev[0] . ',';
         }
 
-        $queryExams = DB::table('sqms_exam_version')->where('sqms_exam_version_id', $idv)->get();
+        $queryExams = DB::table('v_sqms_exam_version_sample_set')->where('sqms_exam_version_id', $idv)->get();
+        //$queryExams = DB::table('sqms_exam_version')->where('sqms_exam_version_id', $idv)->get();
 
 
         $domtree = new \DOMDocument('1.0', 'UTF-8');
