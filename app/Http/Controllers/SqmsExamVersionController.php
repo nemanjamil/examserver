@@ -6,6 +6,10 @@ use App\Sqms_exam_version;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use WindowsAzure\Common\ServicesBuilder;
+use WindowsAzure\Common\ServiceException;
+use MicrosoftAzure\Storage\Blob\Models\CreateBlobOptions;
+
 
 class SqmsExamVersionController extends Controller
 {
@@ -274,11 +278,36 @@ class SqmsExamVersionController extends Controller
             Storage::put($publiclink . '/' . $namefile . '.json', json_encode($json));
             Storage::put($publiclink . '/' . $namefile . '.xml', $xml);
             Storage::put($publiclink . '/' . $namefile . '.SALT', $hash_salt);
+
+            // save to Azure Blob
+            $this->saveToAzureBlob($publiclink,$namefile);
+
         }  else {
             $namefile = false;
         }
 
         return $namefile;
+    }
+
+    protected function saveToAzureBlob($publiclink,$namefile){
+
+        $connectionString = "DefaultEndpointsProtocol=http;AccountName=".env('AZURE_ACCOUNT_NAME').";AccountKey=".env('AZURE_ACCOUNT_KEY');
+        $blobRestProxy = ServicesBuilder::getInstance()->createBlobService($connectionString);
+
+        $content = Storage::get($publiclink . '/' . $namefile . '.json');
+        $blob_name = $namefile.".json";
+
+        try {
+            $options = new CreateBlobOptions();
+            $contentType = 'application/json';
+            $options->setContentType($contentType);
+            $blobRestProxy->createBlockBlob(env('AZURE_CONTAINER'), $blob_name, $content,$options);
+        } catch(ServiceException $e){
+            $code = $e->getCode();
+            $error_message = $e->getMessage();
+            echo $code.": ".$error_message."<br />";
+        }
+
     }
 
     /**
@@ -326,10 +355,35 @@ class SqmsExamVersionController extends Controller
         $numberOfQuestionTotal = $this->numberOfQuestionTotal($idvcsv);
 
 
-        $response["examName"] = rtrim($examNamefull, ", ");
-        $response["set"] = $sqms_exam_set;
-        $response["version"] = $sqms_exam_version;
-        $response["SampleSet"] = ($sqms_exam_version_sample_set) ? true : false;
+        $response["ExamVersion_ID"] = "";
+        $response["ExamVersion_EXTERNAL_ID"] = rand(10,100000);
+        $response["ExamVersion_Name"] = rtrim($examNamefull, ", ");
+        $response["ExamVersion_Set"] = $sqms_exam_set;
+        $response["ExamVersion_Version"] = $sqms_exam_version;
+        $response["ExamVersion_SampleSet"] = ($sqms_exam_version_sample_set) ? true : false;
+        $response["ExamVersion_QuestionNumber"] = 30;
+        $response["ExamVersion_maxPoints"] = 30;
+        $response["ExamVersion_passingPoints"] = 20;
+        $response["ExamVersion_Language"] = "de";
+        $response["ExamVersion_Type"] = "static";
+        $response["BulkEvent_ID"] = "";
+        $response["BulkEvent_EXTERNAL_ID"] = "";
+        $response["Participant_ID"] = "";
+        $response["Participant_EXTERNAL_ID"] = "";
+        $response["Participant_MatriculationNumber"] = "";
+        $response["Participant_Firstname"] = "";
+        $response["Participant_Lastname"] = "";
+        $response["Participant_Expert"] = false;
+        $response["ExamEvent_ID"] = "";
+        $response["ExamEvent_EXTERNAL_ID"] = "";
+        $response["ExamEvent_GenerationTime"] = "";
+        $response["ExamEvent_ReadyTime"] = "";
+        $response["ExamEvent_StartTime"] = "";
+        $response["ExamEvent_EndTime"] = "";
+        $response["ExamVersion_plannedDuration"] = "";
+        $response["Exam_Started"] = false;
+        $response["Exam_Finished"] = false;
+        $response["Exam_FMR"] = "";
         $response["id"] = rtrim($idset, "-");
         $response["uid"] = 0;
         $response["time"] = 0;
