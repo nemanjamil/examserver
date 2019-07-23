@@ -35,8 +35,7 @@ class SqmsExamVersionController extends Controller
             $idv[] = (int) $onev[0];
             $idvcsv .= $onev[0] . ',';
         }
-        asort($idv); // just in case
-
+        asort($idv);
 
         $queryExams = DB::table(self::$tableName)->whereIn('sqms_exam_version_id', $idv)->get();
         //$queryExams = DB::table('sqms_exam_version')->whereIn('sqms_exam_version_id', $idv)->get();
@@ -196,7 +195,7 @@ class SqmsExamVersionController extends Controller
     {
         $datafull = $request->all();
         $data = $datafull["data"];
-        $hash_salt = $datafull["hash_salt"];
+        $hash_salt = strtoupper($datafull["hash_salt"]);
         $savedata = $datafull["savedata"];
         $successpercent = (int) $datafull["successpercent"];
 
@@ -254,15 +253,13 @@ class SqmsExamVersionController extends Controller
             Storage::makeDirectory($publiclink);
             Storage::put($publiclink . '/' . $namefile . '.json', json_encode($json));
             Storage::put($publiclink . '/' . $namefile . '.xml', $xml);
-            Storage::put($publiclink . '/' . $namefile . '.SALT', $hash_salt);
+            Storage::put($publiclink . '/' . $namefile . '.salt', $hash_salt);
 
             // save JSON Questions to Azure Blob
-            $this->saveToAzureBlob($publiclink,$namefile);
+            //$this->saveToAzureBlob($publiclink,$namefile);
 
             // save SALT to Azure Blob
-            $this->saveSaltToAzureBlob($publiclink,$namefile);
-
-
+            //$this->saveSaltToAzureBlob($publiclink,$namefile);
 
         }  else {
             $namefile = false;
@@ -276,7 +273,7 @@ class SqmsExamVersionController extends Controller
         $connectionString = "DefaultEndpointsProtocol=http;AccountName=".env('AZURE_ACCOUNT_NAME').";AccountKey=".env('AZURE_ACCOUNT_KEY');
         $blobRestProxy = ServicesBuilder::getInstance()->createBlobService($connectionString);
 
-        $content = Storage::get($publiclink . '/' . $namefile . '.SALT');
+        $content = Storage::get($publiclink . '/' . $namefile . '.salt');
         $blob_name = $namefile.".salt";
 
         try {
