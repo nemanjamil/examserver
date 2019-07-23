@@ -19,12 +19,13 @@ class SqmsExamVersionController extends Controller
      * @return \Illuminate\Http\Response
      */
 
+    private static $tableName = "sqms_exam_version"; // v_sqms_exam_version_sample_set  sqms_exam_version
+
     public function index()
     {
+
         return Sqms_exam_version::all();
-        // new queru //v_sqms_exam_version_sample_set
         //return DB::table('v_sqms_exam_version_sample_set')->get();
-        //dd($queryExams);
 
     }
 
@@ -55,7 +56,7 @@ class SqmsExamVersionController extends Controller
     }
 
 
-    protected function  showMore($data, $hash_salt)
+    protected function  showMore($data, $hash_salt, $successpercent)
     {
         $idvcsv = '';
         foreach ($data as $k => $v) {
@@ -65,7 +66,8 @@ class SqmsExamVersionController extends Controller
         }
         asort($idv); // just in case
 
-        $queryExams = DB::table('v_sqms_exam_version_sample_set')->whereIn('sqms_exam_version_id', $idv)->get();
+
+        $queryExams = DB::table(self::$tableName)->whereIn('sqms_exam_version_id', $idv)->get();
         //$queryExams = DB::table('sqms_exam_version')->whereIn('sqms_exam_version_id', $idv)->get();
 
         $examNamefull = "COMBI ";
@@ -84,7 +86,7 @@ class SqmsExamVersionController extends Controller
             $i++;
         }
 
-        return $this->showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $v->sqms_exam_set, $v->sqms_exam_version, $sqms_exam_version_sample_set);
+        return $this->showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $v->sqms_exam_set, $v->sqms_exam_version, $sqms_exam_version_sample_set, $successpercent);
 
     }
 
@@ -107,7 +109,7 @@ class SqmsExamVersionController extends Controller
             $idvcsv .= $onev[0] . ',';
         }
 
-        $queryExams = DB::table('v_sqms_exam_version_sample_set')->whereIn('sqms_exam_version_id', $idv)->get();
+        $queryExams = DB::table(self::$tableName)->whereIn('sqms_exam_version_id', $idv)->get();
         //$queryExams = DB::table('sqms_exam_version')->whereIn('sqms_exam_version_id', $idv)->get();
 
         $domtree = new \DOMDocument('1.0', 'UTF-8');
@@ -231,6 +233,7 @@ class SqmsExamVersionController extends Controller
         $data = $datafull["data"];
         $hash_salt = $datafull["hash_salt"];
         $savedata = $datafull["savedata"];
+        $successpercent = (int) $datafull["successpercent"];
 
         if (!$hash_salt) {
             return response()->json([
@@ -239,8 +242,17 @@ class SqmsExamVersionController extends Controller
             ]);
             die;
         }
+
+        if (!$successpercent) {
+            return response()->json([
+                'message' => 'No success percent, please add one',
+                'status' => false
+            ]);
+            die;
+        }
+
         if (count($data) > 1) {
-            $json = $this->showMore($data, $hash_salt);
+            $json = $this->showMore($data, $hash_salt, $successpercent);
             $xml = $this->generateXMLMore($data, $hash_salt);
             $linkdofile = $this->saveToStorage($savedata, $json, $xml, $hash_salt);
 
@@ -254,7 +266,7 @@ class SqmsExamVersionController extends Controller
 
 
         } else {
-            $json = $this->showOne($data, $hash_salt);
+            $json = $this->showOne($data, $hash_salt, $successpercent);
             $xml = $this->generateXML($data, $hash_salt);
             $linkdofile = $this->saveToStorage($savedata, $json, $xml, $hash_salt);
 
@@ -272,21 +284,47 @@ class SqmsExamVersionController extends Controller
     protected function saveToStorage($savedata, $json, $xml, $hash_salt)
     {
         if ($savedata == 'download') {
-            $namefile = str_replace("-", "", $json["id"]);
+            $namefile = str_replace("-", "", $json["Exam_Id"]);
             $publiclink = 'public/' . $namefile;
             Storage::makeDirectory($publiclink);
             Storage::put($publiclink . '/' . $namefile . '.json', json_encode($json));
             Storage::put($publiclink . '/' . $namefile . '.xml', $xml);
             Storage::put($publiclink . '/' . $namefile . '.SALT', $hash_salt);
 
-            // save to Azure Blob
+            // save JSON Questions to Azure Blob
             $this->saveToAzureBlob($publiclink,$namefile);
+
+            // save SALT to Azure Blob
+            $this->saveSaltToAzureBlob($publiclink,$namefile);
+
+
 
         }  else {
             $namefile = false;
         }
 
         return $namefile;
+    }
+
+    protected function saveSaltToAzureBlob($publiclink,$namefile){
+
+        $connectionString = "DefaultEndpointsProtocol=http;AccountName=".env('AZURE_ACCOUNT_NAME').";AccountKey=".env('AZURE_ACCOUNT_KEY');
+        $blobRestProxy = ServicesBuilder::getInstance()->createBlobService($connectionString);
+
+        $content = Storage::get($publiclink . '/' . $namefile . '.SALT');
+        $blob_name = $namefile.".salt";
+
+        try {
+            $options = new CreateBlobOptions();
+            $contentType = 'text/plain';
+            $options->setContentType($contentType);
+            $blobRestProxy->createBlockBlob(env('AZURE_CONTAINER'), $blob_name, $content,$options);
+        } catch(ServiceException $e){
+            $code = $e->getCode();
+            $error_message = $e->getMessage();
+            echo $code.": ".$error_message."<br />";
+        }
+
     }
 
     protected function saveToAzureBlob($publiclink,$namefile){
@@ -349,10 +387,13 @@ class SqmsExamVersionController extends Controller
         return DB::select("CALL countexams('" . rtrim($idvcsv, ", ") . "')");
     }
 
-    protected function showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $sqms_exam_set, $sqms_exam_version, $sqms_exam_version_sample_set)
+    protected function showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $sqms_exam_set, $sqms_exam_version, $sqms_exam_version_sample_set, $successpercent)
     {
 
         $numberOfQuestionTotal = $this->numberOfQuestionTotal($idvcsv);
+        $numberOfQuestionTotalNumber = $numberOfQuestionTotal[0]->questionTotal;
+
+        $ExamVersion_passingPoints = ceil($numberOfQuestionTotalNumber * $successpercent / 100);
 
 
         $response["ExamVersion_ID"] = "";
@@ -361,9 +402,10 @@ class SqmsExamVersionController extends Controller
         $response["ExamVersion_Set"] = $sqms_exam_set;
         $response["ExamVersion_Version"] = $sqms_exam_version;
         $response["ExamVersion_SampleSet"] = ($sqms_exam_version_sample_set) ? true : false;
-        $response["ExamVersion_QuestionNumber"] = 30;
-        $response["ExamVersion_maxPoints"] = 30;
-        $response["ExamVersion_passingPoints"] = 20;
+        $response["ExamVersion_QuestionNumber"] = "";
+        $response["Exam_SuccessPercent"] = $successpercent;
+        $response["ExamVersion_maxPoints"] = $numberOfQuestionTotalNumber;
+        $response["ExamVersion_passingPoints"] = $ExamVersion_passingPoints;
         $response["ExamVersion_Language"] = "de";
         $response["ExamVersion_Type"] = "static";
         $response["BulkEvent_ID"] = "";
@@ -384,16 +426,11 @@ class SqmsExamVersionController extends Controller
         $response["Exam_Started"] = false;
         $response["Exam_Finished"] = false;
         $response["Exam_FMR"] = "";
-        $response["id"] = rtrim($idset, "-");
-        $response["uid"] = 0;
-        $response["time"] = 0;
-        $response["starttime"] = 0;
-        $response["duration"] = 0;
-        $response["questionIndex"] = 0;
-        $response["questionTotal"] = $numberOfQuestionTotal[0]->questionTotal;
-        $response["firstname"] = "";
-        $response["lastname"] = "";
-        $response["answerOptions"] = [];
+        $response["Exam_Id"] = rtrim($idset, "-");
+        $response["Exam_Uid"] = "";
+        $response["Exam_QuestionIndex"] = 0;
+        $response["Exam_QuestionTotal"] = $numberOfQuestionTotalNumber;
+        $response["Exam_AnswerOptions"] = [];
 
 
         $numberOfQuestionTotalExam = DB::select("CALL examquestions('" . rtrim($idvcsv, ", ") . "')");
@@ -456,16 +493,15 @@ class SqmsExamVersionController extends Controller
 
     }
 
-    protected function showOne($data, $hash_salt)
+    protected function showOne($data, $hash_salt, $successpercent)
     {
 
         $onev = explode("|", $data[0]);
         $idv = $onev[0];
         $idvcsv = $onev[0];
 
-
-
-        $queryExams = DB::table('sqms_exam_version')->where('sqms_exam_version_id', $idv)->get();
+        $queryExams = DB::select("CALL selectOneExam($idv)");
+        //$queryExams = DB::table('sqms_exam_version')->where('sqms_exam_version_id', $idv)->get();
 
         $idset = '';
         $i = 0;
@@ -480,7 +516,7 @@ class SqmsExamVersionController extends Controller
             $i++;
         }
 
-        return $this->showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $v->sqms_exam_set, $v->sqms_exam_version, $sqms_exam_version_sample_set);
+        return $this->showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $v->sqms_exam_set, $v->sqms_exam_version, $sqms_exam_version_sample_set, $successpercent);
 
     }
 
@@ -494,7 +530,7 @@ class SqmsExamVersionController extends Controller
             $idvcsv .= $onev[0] . ',';
         }
 
-        $queryExams = DB::table('v_sqms_exam_version_sample_set')->where('sqms_exam_version_id', $idv)->get();
+        $queryExams = DB::table(self::$tableName)->where('sqms_exam_version_id', $idv)->get();
         //$queryExams = DB::table('sqms_exam_version')->where('sqms_exam_version_id', $idv)->get();
 
 
