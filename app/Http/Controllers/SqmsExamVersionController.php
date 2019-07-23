@@ -13,48 +13,19 @@ use MicrosoftAzure\Storage\Blob\Models\CreateBlobOptions;
 
 class SqmsExamVersionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
 
     private static $tableName = "sqms_exam_version"; // v_sqms_exam_version_sample_set  sqms_exam_version
 
     public function index()
     {
-
         return Sqms_exam_version::all();
         //return DB::table('v_sqms_exam_version_sample_set')->get();
-
     }
 
     public function hashsalt()
     {
         return response()->json(config('constants.hash_salt'));
     }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
 
     protected function  showMore($data, $hash_salt, $successpercent)
     {
@@ -221,12 +192,6 @@ class SqmsExamVersionController extends Controller
         return $domtree->saveXML();
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Sqms_exam_version $sqms_exam_version
-     * @return \Illuminate\Http\Response
-     */
     public function show(Sqms_exam_version $sqms_exam_version, Request $request)
     {
         $datafull = $request->all();
@@ -346,40 +311,6 @@ class SqmsExamVersionController extends Controller
             echo $code.": ".$error_message."<br />";
         }
 
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Sqms_exam_version $sqms_exam_version
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Sqms_exam_version $sqms_exam_version)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @param  \App\Sqms_exam_version $sqms_exam_version
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Sqms_exam_version $sqms_exam_version)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Sqms_exam_version $sqms_exam_version
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Sqms_exam_version $sqms_exam_version)
-    {
-        //
     }
 
     protected function numberOfQuestionTotal($idvcsv)
