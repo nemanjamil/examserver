@@ -256,10 +256,10 @@ class SqmsExamVersionController extends Controller
             Storage::put($publiclink . '/' . $namefile . '.salt', $hash_salt);
 
             // save JSON Questions to Azure Blob
-            //$this->saveToAzureBlob($publiclink,$namefile);
+            $this->saveToAzureBlob($publiclink,$namefile);
 
             // save SALT to Azure Blob
-            //$this->saveSaltToAzureBlob($publiclink,$namefile);
+            $this->saveSaltToAzureBlob($publiclink,$namefile);
 
         }  else {
             $namefile = false;
@@ -274,7 +274,7 @@ class SqmsExamVersionController extends Controller
         $blobRestProxy = ServicesBuilder::getInstance()->createBlobService($connectionString);
 
         $content = Storage::get($publiclink . '/' . $namefile . '.salt');
-        $blob_name = $namefile.".salt";
+        $blob_name = 'salt/'.$namefile.".salt";
 
         try {
             $options = new CreateBlobOptions();
