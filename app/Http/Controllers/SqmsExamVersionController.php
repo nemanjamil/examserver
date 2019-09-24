@@ -14,7 +14,8 @@ use MicrosoftAzure\Storage\Blob\Models\CreateBlobOptions;
 class SqmsExamVersionController extends Controller
 {
 
-    private static $tableName = "sqms_exam_version"; // v_sqms_exam_version_sample_set  sqms_exam_version
+    private static $tableName = "v_sqms_exam_version_sample_set"; // v_sqms_exam_version_sample_set  sqms_exam_version
+
 
     public function index()
     {
@@ -428,7 +429,7 @@ class SqmsExamVersionController extends Controller
         $idv = $onev[0];
         $idvcsv = $onev[0];
 
-        $queryExams = DB::select("CALL selectOneExam($idv)");
+        $queryExams = DB::select("CALL selectOneExamSet($idv)");
         //$queryExams = DB::table('sqms_exam_version')->where('sqms_exam_version_id', $idv)->get();
 
         $idset = '';
