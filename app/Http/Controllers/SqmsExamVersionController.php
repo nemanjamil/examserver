@@ -14,8 +14,8 @@ use MicrosoftAzure\Storage\Blob\Models\CreateBlobOptions;
 class SqmsExamVersionController extends Controller
 {
 
-    private static $tableName = "v_sqms_exam_version_sample_set"; // v_sqms_exam_version_sample_set  sqms_exam_version
-
+    //private static $tableName = "sqms_exam_version";
+    private static $tableName = "v_sqms_exam_version_sample_set";
 
     public function index()
     {
@@ -249,7 +249,7 @@ class SqmsExamVersionController extends Controller
     protected function saveToStorage($savedata, $json, $xml, $hash_salt)
     {
         if ($savedata == 'download') {
-            $namefile = str_replace("-", "", $json["Exam_Id"]);
+            $namefile = preg_replace('/[^a-zA-Z0-9]+/', '_', $json["ExamVersion_Name"]);
             $publiclink = 'public/' . $namefile;
             Storage::makeDirectory($publiclink);
             Storage::put($publiclink . '/' . $namefile . '.json', json_encode($json));
@@ -367,7 +367,7 @@ class SqmsExamVersionController extends Controller
         foreach ($numberOfQuestionTotalExam as $k => $v) {
             $sprint_sqms_question_id = sprintf("%010d", $v->sqms_question_id);
             $qarr['question_id'] = $sprint_sqms_question_id;
-            $qarr['question_text'] = $v->question;
+            $qarr['question_text'] = strip_tags(html_entity_decode($v->question, ENT_COMPAT | ENT_HTML401, 'UTF-8'));
             //$qarr['sqms_exam_version_id'] = $v->sqms_exam_version_id;
             $qarr['answers'] = [];
             $qarr['answersSelected'] = [];
@@ -387,11 +387,11 @@ class SqmsExamVersionController extends Controller
                     $correct_answ = $v->correct;
                     $answer_is_sprint = sprintf("%010d", $v->sqms_answer_id);
                     $forls['answer_id'] = $answer_is_sprint;
-                    $forls['answer_text'] = $v->answer;
+                    $forls['answer_text'] = strip_tags(html_entity_decode($v->answer, ENT_COMPAT | ENT_HTML401, 'UTF-8'));
                     $forls['correct'] = $correct_answ;
 
                     if ($correct_answ == 1) {
-                            $firstNumberforHash .= $answer_is_sprint;
+                        $firstNumberforHash .= $answer_is_sprint;
                     }
 
                     $answerHash = $firstNumberforHash . $hash_salt; //config('constants.hash_salt');
