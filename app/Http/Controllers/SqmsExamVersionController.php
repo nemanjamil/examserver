@@ -6,9 +6,11 @@ use App\Sqms_exam_version;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use WindowsAzure\Common\ServicesBuilder;
-use WindowsAzure\Common\ServiceException;
-use MicrosoftAzure\Storage\Blob\Models\CreateBlobOptions;
+#use WindowsAzure\Common\ServicesBuilder;
+#use WindowsAzure\Common\ServiceException;
+use MicrosoftAzure\Storage\Blob\Models\CreateBlockBlobOptions;# imports
+use MicrosoftAzure\Storage\Blob\BlobRestProxy;
+
 
 
 class SqmsExamVersionController extends Controller
@@ -20,7 +22,32 @@ class SqmsExamVersionController extends Controller
     public function index()
     {
         return Sqms_exam_version::all();
-        //return DB::table('v_sqms_exam_version_sample_set')->get();
+    }
+
+    public function getconnection(){
+        try {
+            DB::connection()->getPdo();
+            if(DB::connection()->getDatabaseName()){
+                return response()->json([
+                    "message" => DB::connection()->getDatabaseName(),
+                    "status" => true
+
+                ], 200);
+            }else{
+                return response()->json([
+                    "message" => "Could not find the database. Please check your configuration.",
+                    "status" => false
+
+                ],400);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                "message" => "Could not open connection to database server.  Please check your configuration.",
+                "status" => false
+            ], 400);
+
+        }
+
     }
 
     public function hashsalt()
@@ -249,7 +276,7 @@ class SqmsExamVersionController extends Controller
     protected function saveToStorage($savedata, $json, $xml, $hash_salt)
     {
         if ($savedata == 'download') {
-            $namefile = preg_replace('/[^a-zA-Z0-9]+/', '_', $json["ExamVersion_Name"]);
+            $namefile = preg_replace('/[^a-zA-Z0-9]+/', '-', $json["ExamVersion_Name"]);
             $publiclink = 'public/' . $namefile;
             Storage::makeDirectory($publiclink);
             Storage::put($publiclink . '/' . $namefile . '.json', json_encode($json));
@@ -272,16 +299,17 @@ class SqmsExamVersionController extends Controller
     protected function saveSaltToAzureBlob($publiclink,$namefile){
 
         $connectionString = "DefaultEndpointsProtocol=http;AccountName=".env('AZURE_ACCOUNT_NAME').";AccountKey=".env('AZURE_ACCOUNT_KEY');
-        $blobRestProxy = ServicesBuilder::getInstance()->createBlobService($connectionString);
+        //$blobRestProxy = ServicesBuilder::getInstance()->createBlobService($connectionString);
+        $blobClient = BlobRestProxy::createBlobService($connectionString);
 
         $content = Storage::get($publiclink . '/' . $namefile . '.salt');
         $blob_name = 'salt/'.$namefile.".salt";
 
         try {
-            $options = new CreateBlobOptions();
+            $options = new CreateBlockBlobOptions();
             $contentType = 'text/plain';
             $options->setContentType($contentType);
-            $blobRestProxy->createBlockBlob(env('AZURE_CONTAINER'), $blob_name, $content,$options);
+            $blobClient->createBlockBlob(env('AZURE_CONTAINER'), $blob_name, $content,$options);
         } catch(ServiceException $e){
             $code = $e->getCode();
             $error_message = $e->getMessage();
@@ -293,16 +321,18 @@ class SqmsExamVersionController extends Controller
     protected function saveToAzureBlob($publiclink,$namefile){
 
         $connectionString = "DefaultEndpointsProtocol=http;AccountName=".env('AZURE_ACCOUNT_NAME').";AccountKey=".env('AZURE_ACCOUNT_KEY');
-        $blobRestProxy = ServicesBuilder::getInstance()->createBlobService($connectionString);
+        //$blobRestProxy = ServicesBuilder::getInstance()->createBlobService($connectionString);
+        $blobClient = BlobRestProxy::createBlobService($connectionString);
+
 
         $content = Storage::get($publiclink . '/' . $namefile . '.json');
         $blob_name = $namefile.".json";
 
         try {
-            $options = new CreateBlobOptions();
+            $options = new CreateBlockBlobOptions();
             $contentType = 'application/json';
             $options->setContentType($contentType);
-            $blobRestProxy->createBlockBlob(env('AZURE_CONTAINER'), $blob_name, $content,$options);
+            $blobClient->createBlockBlob(env('AZURE_CONTAINER'), $blob_name, $content,$options);
         } catch(ServiceException $e){
             $code = $e->getCode();
             $error_message = $e->getMessage();
@@ -388,7 +418,7 @@ class SqmsExamVersionController extends Controller
                     $answer_is_sprint = sprintf("%010d", $v->sqms_answer_id);
                     $forls['answer_id'] = $answer_is_sprint;
                     $forls['answer_text'] = strip_tags(html_entity_decode($v->answer, ENT_COMPAT | ENT_HTML401, 'UTF-8'));
-                    $forls['correct'] = $correct_answ;
+                    //$forls['correct'] = $correct_answ;
 
                     if ($correct_answ == 1) {
                         $firstNumberforHash .= $answer_is_sprint;
