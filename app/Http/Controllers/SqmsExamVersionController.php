@@ -276,7 +276,7 @@ class SqmsExamVersionController extends Controller
     protected function saveToStorage($savedata, $json, $xml, $hash_salt)
     {
         if ($savedata == 'download') {
-            $namefile = preg_replace('/[^a-zA-Z0-9]+/', '-', $json["ExamVersion_Name"]);
+            $namefile = preg_replace('/[^a-zA-Z0-9]+/', '_', $json["ExamVersion_Name"]);
             $publiclink = 'public/' . $namefile;
             Storage::makeDirectory($publiclink);
             Storage::put($publiclink . '/' . $namefile . '.json', json_encode($json));
