@@ -397,7 +397,12 @@ class SqmsExamVersionController extends Controller
             $sprint_sqms_question_id = sprintf("%010d", $v->sqms_question_id);
             $qarr['question_id'] = $sprint_sqms_question_id;
             //$qarr['question_text'] = strip_tags(html_entity_decode($v->question, ENT_COMPAT | ENT_HTML401, 'UTF-8'),"<strong>");
-            $qarr['question_text'] = strip_tags($v->question,"<strong>");
+            //$qarr['question_text'] = strip_tags($v->question,"<strong>");
+            $string = rtrim($v->question, '</p>');
+            $string = ltrim($string, '<p>');
+            $qarr['question_text'] = $this->striphtml($string);
+
+
 
             //$qarr['sqms_exam_version_id'] = $v->sqms_exam_version_id;
             $qarr['answers'] = [];
@@ -419,7 +424,14 @@ class SqmsExamVersionController extends Controller
                     $answer_is_sprint = sprintf("%010d", $v->sqms_answer_id);
                     $forls['answer_id'] = $answer_is_sprint;
                     //$forls['answer_text'] = strip_tags(html_entity_decode($v->answer, ENT_COMPAT | ENT_HTML401, 'UTF-8'),"<strong>");
-                    $forls['answer_text'] = strip_tags($v->answer,"<strong>");
+                    //$forls['answer_text'] = strip_tags($v->answer,"<strong>");
+
+                    $string = rtrim($v->answer, '</p>');
+                    $string = ltrim($string, '<p>');
+                    $forls['answer_text'] = $this->striphtml($string);
+
+
+
                     //$forls['correct'] = $correct_answ;
 
                     if ($correct_answ == 1) {
