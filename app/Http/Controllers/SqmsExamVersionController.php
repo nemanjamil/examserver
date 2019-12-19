@@ -55,7 +55,7 @@ class SqmsExamVersionController extends Controller
         return response()->json(config('constants.hash_salt'));
     }
 
-    protected function  showMore($data, $hash_salt, $successpercent)
+    protected function  showMore($data, $hash_salt, $successpercent, $nameOfExam)
     {
         $idvcsv = '';
         foreach ($data as $k => $v) {
@@ -84,7 +84,7 @@ class SqmsExamVersionController extends Controller
             $i++;
         }
 
-        return $this->showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $v->sqms_exam_set, $v->sqms_exam_version, $sqms_exam_version_sample_set, $successpercent);
+        return $this->showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $v->sqms_exam_set, $v->sqms_exam_version, $sqms_exam_version_sample_set, $successpercent, $nameOfExam);
 
     }
 
@@ -224,6 +224,7 @@ class SqmsExamVersionController extends Controller
         $datafull = $request->all();
         $data = $datafull["data"];
         $hash_salt = strtoupper($datafull["hash_salt"]);
+        $nameOfExam = trim($datafull["nameofexam"]);
         $savedata = $datafull["savedata"];
         $successpercent = (int) $datafull["successpercent"];
 
@@ -243,8 +244,16 @@ class SqmsExamVersionController extends Controller
             die;
         }
 
+        if (!$nameOfExam) {
+            return response()->json([
+                'message' => 'No name of exam, please add one',
+                'status' => false
+            ]);
+            die;
+        }
+
         if (count($data) > 1) {
-            $json = $this->showMore($data, $hash_salt, $successpercent);
+            $json = $this->showMore($data, $hash_salt, $successpercent, $nameOfExam);
             $xml = $this->generateXMLMore($data, $hash_salt);
             $linkdofile = $this->saveToStorage($savedata, $json, $xml, $hash_salt);
 
@@ -258,7 +267,7 @@ class SqmsExamVersionController extends Controller
 
 
         } else {
-            $json = $this->showOne($data, $hash_salt, $successpercent);
+            $json = $this->showOne($data, $hash_salt, $successpercent, $nameOfExam);
             $xml = $this->generateXML($data, $hash_salt);
             $linkdofile = $this->saveToStorage($savedata, $json, $xml, $hash_salt);
 
@@ -346,7 +355,7 @@ class SqmsExamVersionController extends Controller
         return DB::select("CALL countexams('" . rtrim($idvcsv, ", ") . "')");
     }
 
-    protected function showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $sqms_exam_set, $sqms_exam_version, $sqms_exam_version_sample_set, $successpercent)
+    protected function showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $sqms_exam_set, $sqms_exam_version, $sqms_exam_version_sample_set, $successpercent, $nameOfExam)
     {
 
         $numberOfQuestionTotal = $this->numberOfQuestionTotal($idvcsv);
@@ -358,6 +367,7 @@ class SqmsExamVersionController extends Controller
         $response["ExamVersion_ID"] = "";
         $response["ExamVersion_EXTERNAL_ID"] = rand(10,100000);
         $response["ExamVersion_Name"] = rtrim($examNamefull, ", ");
+        $response["ExamVersion_CustomName"] = $nameOfExam;
         $response["ExamVersion_Set"] = $sqms_exam_set;
         $response["ExamVersion_Version"] = $sqms_exam_version;
         $response["ExamVersion_SampleSet"] = ($sqms_exam_version_sample_set) ? true : false;
@@ -466,7 +476,7 @@ class SqmsExamVersionController extends Controller
 
     }
 
-    protected function showOne($data, $hash_salt, $successpercent)
+    protected function showOne($data, $hash_salt, $successpercent, $nameOfExam)
     {
 
         $onev = explode("|", $data[0]);
@@ -489,7 +499,7 @@ class SqmsExamVersionController extends Controller
             $i++;
         }
 
-        return $this->showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $v->sqms_exam_set, $v->sqms_exam_version, $sqms_exam_version_sample_set, $successpercent);
+        return $this->showAdv($idvcsv, $examNamefull, $idset, $hash_salt, $v->sqms_exam_set, $v->sqms_exam_version, $sqms_exam_version_sample_set, $successpercent, $nameOfExam);
 
     }
 
